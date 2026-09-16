@@ -2,13 +2,20 @@ PYTHON_DATA_DIR = ../syllabreak-python/syllabreak/data
 SWIFT_RESOURCES_DIR = Sources/Syllabreak/Resources
 SWIFT_TEST_RESOURCES_DIR = Tests/SyllabreakTests/Resources
 
-.PHONY: build test lint clean install convert-yaml
+.PHONY: build test docs lint clean install convert-yaml
 
 build:
 	swift build
 
 test:
 	swift test
+
+docs:
+	swift package --allow-writing-to-directory .build/docc generate-documentation \
+		--target Syllabreak --output-path .build/docc \
+		--warnings-as-errors \
+		--transform-for-static-hosting \
+		--hosting-base-path syllabreak-swift
 
 lint:
 	swiftlint

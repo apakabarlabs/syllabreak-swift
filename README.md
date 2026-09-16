@@ -1,4 +1,5 @@
 [![Tests](https://github.com/apakabarlabs/syllabreak-swift/actions/workflows/tests.yml/badge.svg)](https://github.com/apakabarlabs/syllabreak-swift/actions/workflows/tests.yml)
+[![Documentation](https://github.com/apakabarlabs/syllabreak-swift/actions/workflows/documentation.yml/badge.svg)](https://apakabarlabs.github.io/syllabreak-swift/documentation/syllabreak/)
 # syllabreak-swift
 
 Multilingual library for accurate and deterministic hyphenation and syllable counting without relying on dictionaries.
@@ -137,6 +138,11 @@ Some writing systems do not fit syllabreak's alphabetic-rules paradigm and will 
 - **Chinese, Japanese, Korean** — logographic / mora-syllabic / Hangul-block-based; no vowel/consonant rule engine applies.
 - **Arabic** — abjad; short vowels are optional diacritics, so syllabification is undecidable without vocalization.
 - **Bengali, Hindi, Sanskrit** — Brahmic abugidas; the unit is the akṣara, which requires Unicode grapheme-cluster logic rather than a flat character table.
+
+## Documentation
+
+The [Swift-DocC API reference](https://apakabarlabs.github.io/syllabreak-swift/documentation/syllabreak/)
+is generated from the public API on every push to `main`.
 
 ## Lines of Code
 
