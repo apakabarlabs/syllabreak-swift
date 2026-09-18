@@ -79,7 +79,7 @@ Swift Package Manager:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/apakabarlabs/syllabreak-swift", from: "0.19.0")
+    .package(url: "https://github.com/apakabarlabs/syllabreak-swift", from: "0.19.1")
 ]
 ```
 
@@ -143,6 +143,10 @@ Some writing systems do not fit syllabreak's alphabetic-rules paradigm and will 
 
 The [Swift-DocC API reference](https://apakabarlabs.github.io/syllabreak-swift/documentation/syllabreak/)
 is generated from the public API on every push to `main`.
+
+## Development
+
+Run `make install-tools` once after cloning, then use `make build` for the complete local check.
 
 ## Lines of Code
 

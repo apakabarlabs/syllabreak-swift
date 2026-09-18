@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.1
+
+### Changed
+
+- Internal refactor and stricter automated checks; drop-in update with no API or behavior changes.
+
 ## 0.19.0
 
 ### Fixed — syllable-division correctness
