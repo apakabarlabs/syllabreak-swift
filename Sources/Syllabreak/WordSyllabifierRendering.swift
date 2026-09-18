@@ -1,12 +1,6 @@
 import Foundation
 
 extension WordSyllabifier {
-  /// Render the result, collapsing geminate expansions that don't split.
-  ///
-  /// For each geminate span we keep the expanded surface only when a
-  /// boundary actually falls between its tokens. Otherwise the span
-  /// collapses back to its original compact text — the caller never sees
-  /// a cosmetic expansion that wasn't earned by an actual line break.
   func renderWithGeminateSpans(boundaries: [Int]) -> String {
     let boundarySet = Set(boundaries)
     let spanRanges = spanTokenRanges()
@@ -79,7 +73,6 @@ extension WordSyllabifier {
     return mapping
   }
 
-  /// Render an exception's hyphen-marked lowercase split using the original case.
   func applyException(_ splitLower: String) -> String {
     var result = ""
     let wordChars = Array(originalWord)

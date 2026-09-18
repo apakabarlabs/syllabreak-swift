@@ -46,7 +46,6 @@ public final class WordSplitter: Sendable {
       "\u{4E00}-\u{9FFF}\u{3400}-\u{4DBF}\u{F900}-\u{FAFF}"
       + "\u{3040}-\u{309F}\u{30A0}-\u{30FF}\u{AC00}-\u{D7AF}"
     guard
-      // ICU regex via NSRegularExpression supports \p{L}\p{M}\p{Nd}.
       let defaultRegex = try? NSRegularExpression(
         pattern: #"[\p{L}\p{M}\p{Nd}]+(?:['’\-][\p{L}\p{M}\p{Nd}]+)*"#
       ),

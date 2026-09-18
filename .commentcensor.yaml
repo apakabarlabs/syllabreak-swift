@@ -1,0 +1,55 @@
+documentation: https://apakabarlabs.github.io/syllabreak-swift/data/documentation/syllabreak.json
+
+skip:
+  - .build/
+
+allow:
+  - file: Sources/Syllabreak/LanguageRule.swift
+    text: |-
+      // Iterate at Unicode scalar level so the resulting span positions
+      // line up with what the Tokenizer (also scalar-based) sees.
+    what_was_tried_and_why_none_of_it_worked:
+      "The function and span type name the expansion and its offsets, while tests
+       enforce rendered results. Neither can preserve the external Swift string-index
+       constraint that both producer and consumer must count Unicode scalars."
+  - file: Sources/Syllabreak/Tokenizer.swift
+    text: |-
+      /// Recompose base+combining-mark runs that NFC into a single declared
+      /// letter whose category differs from the bare NFD base. Russian й = и
+      /// (vowel) + combining breve composes back to the consonant й; left
+      /// decomposed, the vowel base и is wrongly read as a syllable nucleus
+      /// (мой -> мо-й) or absorbed into a long-vowel digraph (Kyrgyz ии: кийиз
+      /// -> кийиз). Greek accented vowels (same class) and Montenegrin с́ (no
+      /// precomposed form) are untouched.
+    what_was_tried_and_why_none_of_it_worked:
+      "The method name records category-changing recomposition and regression tests
+       preserve the examples. Neither explains the external Unicode normalization
+       property that only some base-plus-mark sequences compose to a declared scalar."
+  - file: Sources/Syllabreak/Tokenizer.swift
+    text: |-
+      // For each candidate length (3, 2, 1) try the Mn-skipping match
+      // first, then the direct substring match. The Mn-skip path
+      // composes the next N base letters skipping combining marks, so
+      // it can cover more codepoints than a direct length-N substring
+      // — necessary for Vietnamese triphthongs like yêu (y + ê + u),
+      // where Mn-skip-3 matches the "yeu" base entry across 4
+      // codepoints, while direct-3 would catch the shorter "ye◌̂"
+      // first.
+      //
+      // The direct path is kept as a fallback within each length for
+      // entries whose marks sit on a vowel that participates in the
+      // digraph itself (German "üh" = u + ◌̈ + h).
+    what_was_tried_and_why_none_of_it_worked:
+      "Helper names can distinguish base-letter and direct matching, and corpus tests
+       enforce both outcomes. They cannot preserve why Unicode NFD makes match length
+       differ from scalar length or why the two external YAML representations require
+       this particular precedence."
+  - file: Sources/Syllabreak/WordSplitter.swift
+    text: |-
+      // CJK char ranges baked as literals — ICU doesn't expose Block names
+      // in NSRegularExpression. Order matters: the Latin/digit alternative
+      // sits first so "iPhoneを使う" keeps "iPhone" intact.
+    what_was_tried_and_why_none_of_it_worked:
+      "The regex constant and mixed-script corpus test preserve the result, but neither
+       records the external ICU limitation that prevents using Unicode Block names or
+       why the literal range and alternative order are deliberate."

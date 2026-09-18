@@ -5,12 +5,6 @@ struct LanguageRule: Codable, Sendable {
   let vowels: String
   let consonants: String
   let clustersKeepNext: [String]?
-  // trailing_onsets — onsets valid ONLY in trailing position of a 3+
-  // consonant cluster. Used for Dutch where s+stop splits as VC-CV in
-  // a plain 2-cons cluster (kas-teel) but stays together as the next
-  // syllable's onset when preceded by another consonant (ven-ster,
-  // in-dus-trie). Checked alongside clustersKeepNext inside the 3+
-  // cluster boundary decision.
   let trailingOnsets: [String]?
   let dontSplitDigraphs: [String]?
   let digraphVowels: [String]?
@@ -24,14 +18,7 @@ struct LanguageRule: Codable, Sendable {
   let finalSequencesKeep: [String]?
   let suffixesBreakVre: [String]?
   let suffixesKeepVre: [String]?
-  // Lowercased word -> hyphen-marked split. Overrides the algorithm for
-  // individual words that escape the general rules (e.g. BCMS "dvije",
-  // "prije" — graphic -ije- not from jat, see Matešić 2015 rule P11).
   let exceptions: [String: String]?
-  // Compact-form digraph geminates -> expanded form, applied before
-  // tokenisation. Hungarian writes long double digraphs in a simplified
-  // form (ssz=sz+sz, ggy=gy+gy, ...) but at a line break both halves
-  // are restored in full (asz-szony, meny-nyi).
   let geminateDigraphs: [String: String]?
 
   struct GeminateSpan {
@@ -40,10 +27,12 @@ struct LanguageRule: Codable, Sendable {
     let compactOriginal: String
   }
 
-  // Character sets are augmented with the NFD base of each precomposed
-  // letter (combining marks filtered out). This lets a NFD-normalised
-  // input — what the tokenizer sees inside syllabify() — match against
-  // the base letter that the YAML lists in precomposed form.
+  private struct GeminateMatch {
+    let length: Int
+    let compact: String
+    let expansion: String
+  }
+
   var vowelSet: Set<Character> { Self.augmentChars(vowels) }
   var consonantSet: Set<Character> { Self.augmentChars(consonants) }
   var vowelGlideSet: Set<Character> { Self.augmentChars(vowelGlides ?? "") }
@@ -52,9 +41,6 @@ struct LanguageRule: Codable, Sendable {
   var modifiersSeparatorsSet: Set<Character> { Self.augmentChars(modifiersSeparators ?? "") }
   var finalSemivowelsSet: Set<Character> { Self.augmentChars(finalSemivowels ?? "") }
 
-  // Multi-character entries are augmented with their full NFD decomposition,
-  // so entries with precomposed letters (deu "üh", grc "αἰ") still match
-  // when input has been NFD-normalised.
   var clustersKeepNextSet: Set<String> { Self.augmentStrings(clustersKeepNext) }
   var trailingOnsetsSet: Set<String> { Self.augmentStrings(trailingOnsets) }
   var dontSplitDigraphsSet: Set<String> { Self.augmentStrings(dontSplitDigraphs) }
@@ -72,8 +58,6 @@ struct LanguageRule: Codable, Sendable {
     var result = Set<Character>()
     for char in source {
       result.insert(char)
-      // NFD decomposition: keep the base letter, drop combining marks
-      // — those are handled by the tokenizer's Mn auto-attach.
       for scalar in String(char).decomposedStringWithCanonicalMapping.unicodeScalars
       where scalar.properties.generalCategory != .nonspacingMark {
         result.insert(Character(scalar))
@@ -92,7 +76,6 @@ struct LanguageRule: Codable, Sendable {
     return result
   }
 
-  // Additional property for unique chars (will be set by MetaRule)
   var uniqueChars: Set<Character> = []
 
   private enum CodingKeys: String, CodingKey {
@@ -139,11 +122,6 @@ struct LanguageRule: Codable, Sendable {
     return Double(matching) / Double(cleanText.count)
   }
 
-  /// Expand compact-form digraph geminates (Hungarian ssz, ggy, ...).
-  /// Returns the expanded string and a list of spans. Each span carries
-  /// (start_in_expanded, length_in_expanded, compact_original_text) so the
-  /// renderer can decide whether to keep the expanded form (when a boundary
-  /// falls inside) or restore the compact form (when it doesn't).
   func expandGeminateDigraphs(_ word: String) -> (String, [GeminateSpan]) {
     guard let geminates = geminateDigraphs, !geminates.isEmpty else {
       return (word, [])
@@ -160,44 +138,54 @@ struct LanguageRule: Codable, Sendable {
     var i = 0
     var expandedPos = 0
     while i < wordScalars.count {
-      var matched = false
-      for (short, long) in patterns {
-        let shortScalars = Array(short.unicodeScalars)
-        let shortLen = shortScalars.count
-        if i + shortLen > wordScalars.count { continue }
-        let candidate = String(String.UnicodeScalarView(lowerScalars[i..<(i + shortLen)]))
-        if candidate != short { continue }
-        let originalCompact = String(String.UnicodeScalarView(wordScalars[i..<(i + shortLen)]))
-        let expansion: String
-        if originalCompact == originalCompact.uppercased() {
-          expansion = long.uppercased()
-        } else if originalCompact.first?.isUppercase == true {
-          let head = long.prefix(1).uppercased()
-          let tail = long.dropFirst().lowercased()
-          expansion = head + tail
-        } else {
-          expansion = long
-        }
+      if let match = geminateMatch(
+        at: i, wordScalars: wordScalars, lowerScalars: lowerScalars, patterns: patterns
+      ) {
+        let expansion = match.expansion
         let expansionLength = Array(expansion.unicodeScalars).count
         spans.append(
           GeminateSpan(
             start: expandedPos,
             length: expansionLength,
-            compactOriginal: originalCompact
+            compactOriginal: match.compact
           )
         )
         result += expansion
         expandedPos += expansionLength
-        i += shortLen
-        matched = true
-        break
-      }
-      if !matched {
+        i += match.length
+      } else {
         result.append(Character(wordScalars[i]))
         expandedPos += 1
         i += 1
       }
     }
     return (result, spans)
+  }
+
+  private func geminateMatch(
+    at index: Int,
+    wordScalars: [Unicode.Scalar],
+    lowerScalars: [Unicode.Scalar],
+    patterns: [(key: String, value: String)]
+  ) -> GeminateMatch? {
+    for (short, long) in patterns {
+      let length = short.unicodeScalars.count
+      guard index + length <= wordScalars.count else { continue }
+      let range = index..<(index + length)
+      let candidate = String(String.UnicodeScalarView(lowerScalars[range]))
+      guard candidate == short else { continue }
+
+      let compact = String(String.UnicodeScalarView(wordScalars[range]))
+      let expansion: String
+      if compact == compact.uppercased() {
+        expansion = long.uppercased()
+      } else if compact.first?.isUppercase == true {
+        expansion = long.prefix(1).uppercased() + long.dropFirst().lowercased()
+      } else {
+        expansion = long
+      }
+      return GeminateMatch(length: length, compact: compact, expansion: expansion)
+    }
+    return nil
   }
 }

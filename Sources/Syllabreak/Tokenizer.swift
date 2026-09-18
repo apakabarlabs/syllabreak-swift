@@ -16,7 +16,6 @@ class Tokenizer {
     self.rule = rule
   }
 
-  /// Classify a single letter as vowel or consonant, or nil if unknown.
   private static func classifyLetter(_ char: Character, rule: LanguageRule) -> TokenClass? {
     if rule.vowelSet.contains(char) {
       return .vowel
@@ -96,9 +95,6 @@ class Tokenizer {
   private func tryMatchLeftModifier() -> Bool {
     let scalar = scalars[pos]
     let char = Character(scalar)
-    // Explicit list from the rule, plus any Unicode nonspacing mark —
-    // the Mn fallback covers polytonic Greek breathings / accents /
-    // iota subscript and any other combining mark transparently.
     let attaches = rule.modifiersAttachLeftSet.contains(char) || Self.isNonspacingMark(scalar)
     if !attaches {
       return false
@@ -202,7 +198,6 @@ class Tokenizer {
   }
 
   private func scanBases() -> [Int] {
-    // End-positions of up to 3 upcoming base letters, skipping Mn marks.
     var positions: [Int] = []
     var p = pos
     while p < scalars.count && positions.count < 3 {
@@ -230,8 +225,6 @@ class Tokenizer {
   }
 
   private func diaeresisVetoesAt(_ endPos: Int) -> Bool {
-    // Diaeresis (U+0308) attached to the closing base of a candidate
-    // digraph signals hiatus, not a diphthong (αϊ / Μαΐου / naïf).
     for p in endPos..<scalars.count {
       let scalar = scalars[p]
       if !Self.isNonspacingMark(scalar) {

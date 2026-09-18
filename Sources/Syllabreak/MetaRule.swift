@@ -4,7 +4,6 @@ final class MetaRule: Sendable {
   let rules: [LanguageRule]
 
   init(rules: [LanguageRule]) {
-    // Calculate unique chars before storing
     var mutableRules = rules
     for i in 0..<mutableRules.count {
       var uniqueChars = mutableRules[i].allChars
@@ -36,20 +35,17 @@ final class MetaRule: Sendable {
 
     var matches: [(LanguageRule, Double)] = []
 
-    // Calculate scores for all rules
     for rule in rules {
       var score = rule.calculateMatchScore(text)
       if score > 0 {
-        // Boost score if has unique characters
-        if !rule.uniqueChars.isEmpty && cleanText.contains(where: { rule.uniqueChars.contains($0) })
-        {
-          score = 1.0  // Maximum score for unique chars
+        let hasUniqueCharacter = cleanText.contains { rule.uniqueChars.contains($0) }
+        if !rule.uniqueChars.isEmpty && hasUniqueCharacter {
+          score = 1.0
         }
         matches.append((rule, score))
       }
     }
 
-    // Sort by score descending
     matches.sort { $0.1 > $1.1 }
 
     return matches.map { $0.0 }

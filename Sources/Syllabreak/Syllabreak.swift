@@ -19,10 +19,10 @@ public final class Syllabreak: Sendable {
     self.metaRule = MetaRule(rules: Self.rulesData.rules)
   }
 
+  /// Returns matching language codes in descending confidence order.
+  ///
+  /// Canonically equivalent NFC and NFD input produces the same result.
   public func detectLanguage(_ text: String) -> [String] {
-    // Detect on NFC-normalised text so precomposed letters (Polish ą,
-    // deu ä, polytonic Greek ἤ …) discriminate via each rule's
-    // uniqueChars set, whatever form the caller hands us.
     let matchingRules = metaRule.findMatches(text.precomposedStringWithCanonicalMapping)
     return matchingRules.map { $0.lang }
   }
@@ -44,6 +44,10 @@ public final class Syllabreak: Sendable {
     return nil
   }
 
+  /// Inserts soft hyphens at valid syllable boundaries.
+  ///
+  /// When `lang` is `nil`, the language is detected automatically. The input is returned unchanged
+  /// when no rule matches or when the requested language is unsupported. The result is NFC-normalized.
   public func syllabify(_ text: String, lang: String? = nil) -> String {
     if text.isEmpty {
       return text
@@ -52,7 +56,6 @@ public final class Syllabreak: Sendable {
     let rule: LanguageRule?
     if let lang = lang {
       guard let foundRule = getRuleByLang(lang) else {
-        // Language not supported, return unchanged
         return text
       }
       rule = foundRule
@@ -67,9 +70,6 @@ public final class Syllabreak: Sendable {
       return text
     }
 
-    // Work on the NFD form so combining marks (polytonic Greek, BCMS
-    // с́, etc.) sit as their own codepoints. Renormalise the result
-    // back to NFC before returning so callers see the canonical form.
     let nfdText = text.decomposedStringWithCanonicalMapping
 
     var result: [String] = []
