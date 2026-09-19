@@ -66,7 +66,7 @@ struct LanguageRule: Codable, Sendable {
     return result
   }
 
-  private static func augmentStrings(_ source: [String]?) -> Set<String> {
+  static func augmentStrings(_ source: [String]?) -> Set<String> {
     guard let entries = source else { return [] }
     var result = Set<String>(minimumCapacity: entries.count * 2)
     for entry in entries {
