@@ -5,11 +5,7 @@ skip:
 
 allow:
   - file: Sources/Syllabreak/WordSplitter.swift
-    text: |-
-      // CJK char ranges baked as literals — ICU doesn't expose Block names
-      // in NSRegularExpression. Order matters: the Latin/digit alternative
-      // sits first so "iPhoneを使う" keeps "iPhone" intact.
+    text: // NSRegularExpression has no Unicode Block-name syntax, so CJK ranges are literal.
     what_was_tried_and_why_none_of_it_worked:
-      "The regex constant and mixed-script corpus test preserve the result, but neither
-       records the external ICU limitation that prevents using Unicode Block names or
-       why the literal range and alternative order are deliberate."
+      "The regex constant and shared corpus tests preserve behavior, but cannot record
+       the external API limitation that requires literal ranges."

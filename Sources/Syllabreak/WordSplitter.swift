@@ -39,9 +39,7 @@ public final class WordSplitter: Sendable {
       modes[entry.lang] = entry.mode
     }
     self.modes = modes
-    // CJK char ranges baked as literals — ICU doesn't expose Block names
-    // in NSRegularExpression. Order matters: the Latin/digit alternative
-    // sits first so "iPhoneを使う" keeps "iPhone" intact.
+    // NSRegularExpression has no Unicode Block-name syntax, so CJK ranges are literal.
     let cjkChars =
       "\u{4E00}-\u{9FFF}\u{3400}-\u{4DBF}\u{F900}-\u{FAFF}"
       + "\u{3040}-\u{309F}\u{30A0}-\u{30FF}\u{AC00}-\u{D7AF}"
