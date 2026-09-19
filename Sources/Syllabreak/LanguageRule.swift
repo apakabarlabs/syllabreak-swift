@@ -49,6 +49,7 @@ struct LanguageRule: Codable, Sendable {
   var finalSequencesKeepSet: Set<String> { Self.augmentStrings(finalSequencesKeep) }
   var suffixesBreakVreSet: Set<String> { Self.augmentStrings(suffixesBreakVre) }
   var suffixesKeepVreSet: Set<String> { Self.augmentStrings(suffixesKeepVre) }
+  var exceptionMap: [String: String] { Self.augmentMapping(exceptions) }
 
   var allChars: Set<Character> {
     vowelSet.union(consonantSet)
@@ -72,6 +73,16 @@ struct LanguageRule: Codable, Sendable {
     for entry in entries {
       result.insert(entry)
       result.insert(entry.decomposedStringWithCanonicalMapping)
+    }
+    return result
+  }
+
+  static func augmentMapping(_ source: [String: String]?) -> [String: String] {
+    guard let entries = source else { return [:] }
+    var result = entries
+    for (key, value) in entries {
+      result[key.decomposedStringWithCanonicalMapping] =
+        value.decomposedStringWithCanonicalMapping
     }
     return result
   }
@@ -123,7 +134,8 @@ struct LanguageRule: Codable, Sendable {
   }
 
   func expandGeminateDigraphs(_ word: String) -> (String, [GeminateSpan]) {
-    guard let geminates = geminateDigraphs, !geminates.isEmpty else {
+    let geminates = Self.augmentMapping(geminateDigraphs)
+    guard !geminates.isEmpty else {
       return (word, [])
     }
     // Iterate at Unicode scalar level so the resulting span positions

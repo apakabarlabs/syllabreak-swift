@@ -268,7 +268,7 @@ class WordSyllabifier {
   }
 
   func syllabify() -> String {
-    if let exceptionSplit = rule.exceptions?[originalWord.lowercased()] {
+    if let exceptionSplit = rule.exceptionMap[originalWord.lowercased()] {
       return applyException(exceptionSplit)
     }
 
