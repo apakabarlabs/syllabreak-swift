@@ -7,7 +7,7 @@ class WordSyllabifier {
   let rule: LanguageRule
   let softHyphen: String
   let tokens: [Token]
-  let nuclei: [Int]
+  lazy var nuclei: [Int] = NucleusFinder(word: word, tokens: tokens, rule: rule).find()
 
   init(word: String, rule: LanguageRule, softHyphen: String) {
     self.originalWord = word
@@ -18,7 +18,6 @@ class WordSyllabifier {
     self.softHyphen = softHyphen
     let rawTokens = WordSyllabifier.tokenize(word: expanded, rule: rule)
     self.tokens = WordSyllabifier.reclassifyVowelGlides(tokens: rawTokens, rule: rule)
-    self.nuclei = NucleusFinder(tokens: tokens, rule: rule).find()
   }
 
   private static func tokenize(word: String, rule: LanguageRule) -> [Token] {

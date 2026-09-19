@@ -1,4 +1,5 @@
 struct NucleusFinder {
+  let word: String
   let tokens: [Token]
   let rule: LanguageRule
 
@@ -10,7 +11,54 @@ struct NucleusFinder {
   }
 
   private func vowelNuclei() -> [Int] {
-    tokens.indices.filter { tokens[$0].tokenClass == .vowel }
+    let silentNucleus = classifiedNucleus()
+    return tokens.indices.filter {
+      tokens[$0].tokenClass == .vowel
+        && !(silentNucleus?.index == $0 && silentNucleus?.outcome == "silent")
+    }
+  }
+
+  private func classifiedNucleus() -> (index: Int, outcome: String)? {
+    let wordScalars = Array(word.lowercased().unicodeScalars)
+    let lowerWord = word.lowercased()
+    for suffixRule in rule.validatedVowelNucleusRules {
+      if let words = suffixRule.words, !words.contains(lowerWord) { continue }
+      let endingScalars = Array(
+        suffixRule.suffix.decomposedStringWithCanonicalMapping.unicodeScalars)
+      guard wordScalars.count >= endingScalars.count,
+        wordScalars.suffix(endingScalars.count).elementsEqual(endingScalars)
+      else { continue }
+      let endingStart = wordScalars.count - endingScalars.count
+      let predecessors = Set(
+        (suffixRule.precededBy ?? []).flatMap {
+          $0.decomposedStringWithCanonicalMapping.unicodeScalars
+        }
+      )
+      var preceding = endingStart - 1
+      while preceding >= 0 && wordScalars[preceding].properties.generalCategory == .nonspacingMark {
+        preceding -= 1
+      }
+      let predecessorDoesNotMatch =
+        preceding < 0 || !predecessors.contains(wordScalars[preceding])
+      if !predecessors.isEmpty && predecessorDoesNotMatch {
+        continue
+      }
+      if let predecessorClass = suffixRule.precededByClass {
+        guard preceding >= 0 else { continue }
+        let predecessor = Character(wordScalars[preceding])
+        let expected = predecessorClass == "consonant" ? rule.consonantSet : rule.vowelSet
+        if !expected.contains(predecessor) { continue }
+      }
+      let target = endingStart + suffixRule.vowelOffset
+      let vowelLength = suffixRule.vowelLength ?? 1
+      if let index = tokens.indices.first(where: {
+        tokens[$0].startIdx == target && tokens[$0].endIdx == target + vowelLength
+          && tokens[$0].tokenClass == .vowel
+      }) {
+        return (index, suffixRule.outcome)
+      }
+    }
+    return nil
   }
 
   private func removingFinalSemivowels(from nuclei: [Int]) -> [Int] {

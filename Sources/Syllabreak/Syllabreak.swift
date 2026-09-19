@@ -11,7 +11,11 @@ public final class Syllabreak: Sendable {
   }
 
   private static var rulesData: RulesData {
-    Embedded.getYAML(Bundle.module, path: "rules.yaml")
+    let data: RulesData = Embedded.getYAML(Bundle.module, path: "rules.yaml")
+    for rule in data.rules {
+      _ = rule.validatedVowelNucleusRules
+    }
+    return data
   }
 
   public init(softHyphen: String = defaultSoftHyphen) {

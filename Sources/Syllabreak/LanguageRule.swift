@@ -1,6 +1,35 @@
 import Foundation
 
+struct VowelNucleusRule: Codable, Sendable {
+  let suffix: String
+  let vowelOffset: Int
+  let vowelLength: Int?
+  let outcome: String
+  let words: [String]?
+  let precededBy: [String]?
+  let precededByClass: String?
+
+  private enum CodingKeys: String, CodingKey {
+    case suffix
+    case vowelOffset = "vowel_offset"
+    case vowelLength = "vowel_length"
+    case outcome
+    case words
+    case precededBy = "preceded_by"
+    case precededByClass = "preceded_by_class"
+  }
+}
+
 struct LanguageRule: Codable, Sendable {
+  enum VowelNucleusRuleError: Error, CustomStringConvertible {
+    case invalid(String)
+
+    var description: String {
+      switch self {
+      case .invalid(let message): message
+      }
+    }
+  }
   let lang: String
   let vowels: String
   let consonants: String
@@ -18,6 +47,7 @@ struct LanguageRule: Codable, Sendable {
   let finalSequencesKeep: [String]?
   let suffixesBreakVre: [String]?
   let suffixesKeepVre: [String]?
+  let vowelNucleusRules: [VowelNucleusRule]?
   let exceptions: [String: String]?
   let geminateDigraphs: [String: String]?
 
@@ -49,6 +79,13 @@ struct LanguageRule: Codable, Sendable {
   var finalSequencesKeepSet: Set<String> { Self.augmentStrings(finalSequencesKeep) }
   var suffixesBreakVreSet: Set<String> { Self.augmentStrings(suffixesBreakVre) }
   var suffixesKeepVreSet: Set<String> { Self.augmentStrings(suffixesKeepVre) }
+  var validatedVowelNucleusRules: [VowelNucleusRule] {
+    do {
+      return try Self.validateVowelNucleusRules(vowelNucleusRules ?? [], vowels: vowels)
+    } catch {
+      preconditionFailure(String(describing: error))
+    }
+  }
   var exceptionMap: [String: String] { Self.augmentMapping(exceptions) }
 
   var allChars: Set<Character> {
@@ -87,6 +124,56 @@ struct LanguageRule: Codable, Sendable {
     return result
   }
 
+  static func validateVowelNucleusRules(
+    _ entries: [VowelNucleusRule], vowels: String
+  ) throws -> [VowelNucleusRule] {
+    let vowelScalars = Set(vowels.decomposedStringWithCanonicalMapping.unicodeScalars)
+    var result: [VowelNucleusRule] = []
+    for entry in entries {
+      let suffix = entry.suffix.decomposedStringWithCanonicalMapping
+      let scalars = Array(suffix.unicodeScalars)
+      let vowelLength = entry.vowelLength ?? 1
+      guard vowelLength > 0, scalars.indices.contains(entry.vowelOffset),
+        entry.vowelOffset + vowelLength <= scalars.count
+      else {
+        throw VowelNucleusRuleError.invalid("invalid vowel offset for nucleus rule: \(suffix)")
+      }
+      guard
+        scalars[entry.vowelOffset..<entry.vowelOffset + vowelLength].allSatisfy(
+          vowelScalars.contains)
+      else {
+        throw VowelNucleusRuleError.invalid("nucleus rule target is not a vowel: \(suffix)")
+      }
+      guard ["preserve", "silent"].contains(entry.outcome) else {
+        throw VowelNucleusRuleError.invalid("invalid nucleus rule outcome: \(entry.outcome)")
+      }
+      for predecessor in entry.precededBy ?? []
+      where predecessor.decomposedStringWithCanonicalMapping.unicodeScalars.count != 1 {
+        throw VowelNucleusRuleError.invalid(
+          "nucleus rule predecessor must be one character: \(suffix)")
+      }
+      guard
+        entry.precededByClass == nil
+          || ["consonant", "vowel"].contains(entry.precededByClass!)
+      else {
+        throw VowelNucleusRuleError.invalid(
+          "invalid nucleus rule predecessor class: \(entry.precededByClass!)")
+      }
+      result.append(
+        VowelNucleusRule(
+          suffix: suffix,
+          vowelOffset: entry.vowelOffset,
+          vowelLength: vowelLength,
+          outcome: entry.outcome,
+          words: entry.words?.map { $0.decomposedStringWithCanonicalMapping.lowercased() },
+          precededBy: entry.precededBy,
+          precededByClass: entry.precededByClass
+        )
+      )
+    }
+    return result
+  }
+
   var uniqueChars: Set<Character> = []
 
   private enum CodingKeys: String, CodingKey {
@@ -107,6 +194,7 @@ struct LanguageRule: Codable, Sendable {
     case finalSequencesKeep = "final_sequences_keep"
     case suffixesBreakVre = "suffixes_break_vre"
     case suffixesKeepVre = "suffixes_keep_vre"
+    case vowelNucleusRules = "vowel_nucleus_rules"
     case exceptions
     case geminateDigraphs = "geminate_digraphs"
   }
