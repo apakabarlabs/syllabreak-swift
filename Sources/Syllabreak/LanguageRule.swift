@@ -138,8 +138,6 @@ struct LanguageRule: Codable, Sendable {
     guard !geminates.isEmpty else {
       return (word, [])
     }
-    // Iterate at Unicode scalar level so the resulting span positions
-    // line up with what the Tokenizer (also scalar-based) sees.
     let wordScalars = Array(word.unicodeScalars)
     let lowerScalars = Array(word.lowercased().unicodeScalars)
     let patterns = geminates.sorted {

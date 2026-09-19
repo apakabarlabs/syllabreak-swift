@@ -7,23 +7,27 @@ import Testing
 private enum LanguageRuleTestDataKey: String, CodingKey {
   case tests
   case mappingTests = "mapping_tests"
+  case geminateTests = "geminate_tests"
 }
 
 struct LanguageRuleTests {
   struct TestData: Codable {
     let tests: [TestCase]
     let mappingTests: [MappingTestCase]
+    let geminateTests: [GeminateTestCase]
 
     init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: LanguageRuleTestDataKey.self)
       tests = try container.decode([TestCase].self, forKey: .tests)
       mappingTests = try container.decode([MappingTestCase].self, forKey: .mappingTests)
+      geminateTests = try container.decode([GeminateTestCase].self, forKey: .geminateTests)
     }
 
     func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: LanguageRuleTestDataKey.self)
       try container.encode(tests, forKey: .tests)
       try container.encode(mappingTests, forKey: .mappingTests)
+      try container.encode(geminateTests, forKey: .geminateTests)
     }
   }
 
@@ -38,6 +42,22 @@ struct LanguageRuleTests {
   struct MappingEntry: Codable {
     let key: String
     let value: String
+  }
+
+  struct GeminateTestCase: Codable, CustomTestStringConvertible {
+    let name: String
+    let rule: LanguageRule
+    let word: String
+    let expanded: String
+    let spans: [ExpectedSpan]
+
+    var testDescription: String { name }
+  }
+
+  struct ExpectedSpan: Codable {
+    let start: Int
+    let length: Int
+    let compact: String
   }
 
   struct TestCase: Codable, CustomTestStringConvertible {
@@ -58,6 +78,11 @@ struct LanguageRuleTests {
     return data.mappingTests
   }
 
+  static var geminateTestCases: [GeminateTestCase] {
+    let data: TestData = Embedded.getYAML(Bundle.module, path: "language_rule_tests.yaml")
+    return data.geminateTests
+  }
+
   @Test(arguments: testCases)
   func augmentStrings(testCase: TestCase) {
     #expect(LanguageRule.augmentStrings(testCase.values) == Set(testCase.expected))
@@ -68,6 +93,18 @@ struct LanguageRuleTests {
     let actual = LanguageRule.augmentMapping(testCase.mapping)
     for expected in testCase.expected {
       #expect(actual[expected.key] == expected.value)
+    }
+  }
+
+  @Test(arguments: geminateTestCases)
+  func expandGeminateDigraphs(testCase: GeminateTestCase) {
+    let (expanded, spans) = testCase.rule.expandGeminateDigraphs(testCase.word)
+    #expect(expanded == testCase.expanded)
+    #expect(spans.count == testCase.spans.count)
+    for (span, expected) in zip(spans, testCase.spans) {
+      #expect(span.start == expected.start)
+      #expect(span.length == expected.length)
+      #expect(span.compactOriginal == expected.compact)
     }
   }
 }

@@ -4,33 +4,6 @@ skip:
   - .build/
 
 allow:
-  - file: Sources/Syllabreak/LanguageRule.swift
-    text: |-
-      // Iterate at Unicode scalar level so the resulting span positions
-      // line up with what the Tokenizer (also scalar-based) sees.
-    what_was_tried_and_why_none_of_it_worked:
-      "The function and span type name the expansion and its offsets, while tests
-       enforce rendered results. Neither can preserve the external Swift string-index
-       constraint that both producer and consumer must count Unicode scalars."
-  - file: Sources/Syllabreak/Tokenizer.swift
-    text: |-
-      // For each candidate length (3, 2, 1) try the Mn-skipping match
-      // first, then the direct substring match. The Mn-skip path
-      // composes the next N base letters skipping combining marks, so
-      // it can cover more codepoints than a direct length-N substring
-      // — necessary for Vietnamese triphthongs like yêu (y + ê + u),
-      // where Mn-skip-3 matches the "yeu" base entry across 4
-      // codepoints, while direct-3 would catch the shorter "ye◌̂"
-      // first.
-      //
-      // The direct path is kept as a fallback within each length for
-      // entries whose marks sit on a vowel that participates in the
-      // digraph itself (German "üh" = u + ◌̈ + h).
-    what_was_tried_and_why_none_of_it_worked:
-      "Helper names can distinguish base-letter and direct matching, and corpus tests
-       enforce both outcomes. They cannot preserve why Unicode NFD makes match length
-       differ from scalar length or why the two external YAML representations require
-       this particular precedence."
   - file: Sources/Syllabreak/WordSplitter.swift
     text: |-
       // CJK char ranges baked as literals — ICU doesn't expose Block names

@@ -139,18 +139,6 @@ class Tokenizer {
   }
 
   private func tryMatchDigraph(source: Set<String>, tokenClass: TokenClass) -> Bool {
-    // For each candidate length (3, 2, 1) try the Mn-skipping match
-    // first, then the direct substring match. The Mn-skip path
-    // composes the next N base letters skipping combining marks, so
-    // it can cover more codepoints than a direct length-N substring
-    // — necessary for Vietnamese triphthongs like yêu (y + ê + u),
-    // where Mn-skip-3 matches the "yeu" base entry across 4
-    // codepoints, while direct-3 would catch the shorter "ye◌̂"
-    // first.
-    //
-    // The direct path is kept as a fallback within each length for
-    // entries whose marks sit on a vowel that participates in the
-    // digraph itself (German "üh" = u + ◌̈ + h).
     let positions = scanBases()
     let bases = positions.isEmpty ? [] : basesAtPositions(positions)
     for length in [3, 2, 1] {
