@@ -26,13 +26,6 @@ class Tokenizer {
     return nil
   }
 
-  /// Recompose base+combining-mark runs that NFC into a single declared
-  /// letter whose category differs from the bare NFD base. Russian й = и
-  /// (vowel) + combining breve composes back to the consonant й; left
-  /// decomposed, the vowel base и is wrongly read as a syllable nucleus
-  /// (мой -> мо-й) or absorbed into a long-vowel digraph (Kyrgyz ии: кийиз
-  /// -> кийиз). Greek accented vowels (same class) and Montenegrin с́ (no
-  /// precomposed form) are untouched.
   private static func recomposeCategoryFlips(_ word: String, rule: LanguageRule) -> String {
     let scalars = Array(word.unicodeScalars)
     var result = String.UnicodeScalarView()
