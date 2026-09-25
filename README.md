@@ -2,7 +2,8 @@
 [![Documentation](https://github.com/apakabarlabs/syllabreak-swift/actions/workflows/documentation.yml/badge.svg)](https://apakabarlabs.github.io/syllabreak-swift/documentation/syllabreak/)
 # syllabreak-swift
 
-Multilingual library for accurate and deterministic hyphenation and syllable counting without relying on dictionaries.
+Multilingual library for deterministic, rule-based orthographic syllabification with
+bounded lexical exceptions.
 
 This is a Swift port of [syllabreak-python](https://github.com/apakabarlabs/syllabreak-python). Rules and tests are synced from there via `make sync-yaml`.
 
@@ -67,9 +68,11 @@ For BCMS specifically, character-based auto-detect cannot tell `bos`/`hrv`/`srp-
 
 ## Unicode normalization
 
-The engine accepts text in either NFC or NFD form and round-trips back to canonical NFC:
+When a language rule is applied, the engine accepts either NFC or NFD input and returns
+canonical NFC. An unsupported explicit language or an auto-detection miss returns the
+input unchanged, including its normalization:
 
-- `syllabify(_:lang:)` normalises input to **NFD** internally, so combining marks (Unicode category `Mn` — accents, breathings, ogonek, iota subscript, cedilla, etc.) sit as their own codepoints. The tokenizer attaches each Mn codepoint to the preceding token automatically; while matching digraphs it can also skip over marks placed between two base letters (Greek `ἀι` = α + U+0313 + ι still matches the `αι` entry, Vietnamese `yêu` = y + e + ◌̂ + u matches the `yeu` triphthong base entry). A diaeresis (U+0308) on the closing base of a candidate digraph vetoes the match — that's the standard convention for `αϊ`, `Μαΐου`, `naïf` and similar hiatus markers. The returned string is renormalised to **NFC** before being handed back. The Swift tokenizer iterates Unicode scalars (not grapheme clusters) so polytonic Greek and Vietnamese tones round-trip correctly.
+- When `syllabify(_:lang:)` finds a rule, it normalises input to **NFD** internally, so combining marks (Unicode category `Mn` — accents, breathings, ogonek, iota subscript, cedilla, etc.) sit as their own codepoints. The tokenizer attaches each Mn codepoint to the preceding token automatically; while matching digraphs it can also skip over marks placed between two base letters (Greek `ἀι` = α + U+0313 + ι still matches the `αι` entry, Vietnamese `yêu` = y + e + ◌̂ + u matches the `yeu` triphthong base entry). A diaeresis (U+0308) on the closing base of a candidate digraph vetoes the match — that's the standard convention for `αϊ`, `Μαΐου`, `naïf` and similar hiatus markers. A result processed by the rule is renormalised to **NFC** before being returned. The Swift tokenizer iterates Unicode scalars (not grapheme clusters) so polytonic Greek and Vietnamese tones round-trip correctly.
 - `detectLanguage(_:)` normalises input to NFC and scores it against each rule's character set. Precomposed letters discriminate well (Polish `ą`, German `ä`, polytonic Greek `ἤ`, Vietnamese `ư`/`ơ`/`đ`) via each rule's `uniqueChars`.
 - In rule files, character sets (`vowels`, `consonants`, …) hold the base letters as they appear in `rules.yaml`. Multi-character entries (`digraphVowels`, `dontSplitDigraphs`, `clustersKeepNext`, `trailingOnsets`, …) are stored as the union of their NFC form and their NFD decomposition, so entries with precomposed letters (deu `üh`) still match against the NFD-tokenised input. Combining marks themselves never need listing — the Mn auto-attach takes care of them. For triphthongs that survive NFD as a longer run of codepoints (Vietnamese `ươi`), the Mn-skip path matches the base-stripped form (`uoi`) listed in the rule, so the engine doesn't need to enumerate every diacritic combination.
 
@@ -87,7 +90,7 @@ dependencies: [
 
 ### Auto-detect language
 
-When no language is specified, the library automatically detects the most likely language:
+When no language is specified, the library selects the highest-scoring bundled rule:
 
 ```swift
 import Syllabreak
@@ -123,15 +126,20 @@ print(s.supportedLanguages())  // ["eng", "rus", "srp-cyrl", ...]
 
 ### Language detection
 
-The library returns all matching languages sorted by confidence:
+The library returns all matching languages sorted by rule match score:
 
 ```swift
 let s = Syllabreak()
-print(s.detectLanguage("hello"))   // ["eng", "srp-latn", "tur"]
-print(s.detectLanguage("čovek"))   // ["srp-latn", "eng", "tur"]
+print(s.detectLanguage("қазақ").first)     // Optional("kaz")
+print(s.detectLanguage("հայերեն").first)  // Optional("hye")
 ```
 
-## Out of Scope
+The complete result contains every rule with a nonzero match score, sorted by that score.
+The score is based on character coverage, while a character unique to one bundled rule
+raises that rule to the maximum score. Languages tied at the same score should be treated
+as ambiguous; pass `lang:` explicitly when the language is already known.
+
+## Out-of-scope syllabification
 
 Some writing systems do not fit syllabreak's alphabetic-rules paradigm and will not be added — they need fundamentally different algorithms:
 

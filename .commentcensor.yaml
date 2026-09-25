@@ -2,10 +2,3 @@ documentation: https://apakabarlabs.github.io/syllabreak-swift/data/documentatio
 
 skip:
   - .build/
-
-allow:
-  - file: Sources/Syllabreak/WordSplitter.swift
-    text: // NSRegularExpression has no Unicode Block-name syntax, so CJK ranges are literal.
-    what_was_tried_and_why_none_of_it_worked:
-      "The regex constant and shared corpus tests preserve behavior, but cannot record
-       the external API limitation that requires literal ranges."

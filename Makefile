@@ -1,7 +1,7 @@
 PYTHON_DATA_DIR = ../syllabreak-python/syllabreak/data
 SWIFT_RESOURCES_DIR = Sources/Syllabreak/Resources
 SWIFT_TEST_RESOURCES_DIR = Tests/SyllabreakTests/Resources
-COMMENTCENSOR_VERSION ?= v0.3.2
+COMMENTCENSOR_VERSION ?= v0.3.3
 COMMENTCENSOR_ENV = .build/commentcensor
 COMMENTCENSOR = $(COMMENTCENSOR_ENV)/bin/commentcensor
 
