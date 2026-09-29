@@ -1,9 +1,6 @@
 PYTHON_DATA_DIR = ../syllabreak-python/syllabreak/data
 SWIFT_RESOURCES_DIR = Sources/Syllabreak/Resources
 SWIFT_TEST_RESOURCES_DIR = Tests/SyllabreakTests/Resources
-COMMENTCENSOR_VERSION ?= v0.3.3
-COMMENTCENSOR_ENV = .build/commentcensor
-COMMENTCENSOR = $(COMMENTCENSOR_ENV)/bin/commentcensor
 
 .DEFAULT_GOAL := build
 
@@ -11,14 +8,13 @@ COMMENTCENSOR = $(COMMENTCENSOR_ENV)/bin/commentcensor
 
 install-tools:
 	brew install swiftlint swift-format
-	python3 -m venv $(COMMENTCENSOR_ENV)
-	$(COMMENTCENSOR_ENV)/bin/pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git@$(COMMENTCENSOR_VERSION)
+	python3 -m pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
 
 format:
 	swift-format format --in-place --recursive Sources Tests Package.swift
 
 comments:
-	$(COMMENTCENSOR) .
+	commentcensor .
 
 lint: comments
 	swiftlint --strict
