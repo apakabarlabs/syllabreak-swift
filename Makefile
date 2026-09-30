@@ -1,10 +1,6 @@
-PYTHON_DATA_DIR = ../syllabreak-python/syllabreak/data
-SWIFT_RESOURCES_DIR = Sources/Syllabreak/Resources
-SWIFT_TEST_RESOURCES_DIR = Tests/SyllabreakTests/Resources
-
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools build test-build test docs format comments lint lint-fix clean install sync-yaml
+.PHONY: install-tools build test-build test docs format comments lint lint-fix clean install
 
 install-tools:
 	brew install swiftlint swift-format
@@ -45,12 +41,3 @@ clean:
 
 install:
 	$(MAKE) install-tools
-
-sync-yaml:
-	cp $(PYTHON_DATA_DIR)/rules.yaml $(SWIFT_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/word_split_rules.yaml $(SWIFT_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/syllabify_tests.yaml $(SWIFT_TEST_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/detect_language_tests.yaml $(SWIFT_TEST_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/word_split_tests.yaml $(SWIFT_TEST_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/tokenizer_tests.yaml $(SWIFT_TEST_RESOURCES_DIR)/
-	cp $(PYTHON_DATA_DIR)/language_rule_tests.yaml $(SWIFT_TEST_RESOURCES_DIR)/
