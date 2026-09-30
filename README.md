@@ -5,7 +5,7 @@
 Multilingual library for deterministic, rule-based orthographic syllabification with
 bounded lexical exceptions.
 
-This is a Swift port of [syllabreak-python](https://github.com/apakabarlabs/syllabreak-python). Rules and tests are synced from there via `make sync-yaml`.
+This is a Swift port of [syllabreak-python](https://github.com/apakabarlabs/syllabreak-python). Rules and tests are synced from its `make sync-yaml`.
 
 ## Supported Languages
 
